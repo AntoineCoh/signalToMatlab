@@ -23,15 +23,13 @@ nb_EMGs = data.chans;
 
 val2D = []; %Essai1EMG16plusTMS_wave_data.values(:,:,1)
 for i = 1:nb_frames
-    val2D = [val2D; Essai1EMG16plusTMS_wave_data.values(:,:,i)];
+    val2D = [val2D; data.values(:,:,i)];
 end
 
 %% Creating table for each EMG
 
-struct = s
-
 for i = 1:nb_EMGs
     EMG = val2D(:,i);
     name_EMG = 'EMG_'+ string(i);
-    s.(name_EMG) = EMG;
+    EMG_signals.(name_EMG) = EMG;
 end
