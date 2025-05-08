@@ -14,13 +14,24 @@ tmp = load(str_file_path);
 fields = fieldnames(tmp);
 data = tmp.(fields{1});
 
-%% Reaching the number of frames
+%% Reaching the number of frames / EMGs
 
-nb_frames = data.frames
+nb_frames = data.frames;
+nb_EMGs = data.chans;
 
 %% Concatenating all the frame to have one single, continuous, signal
 
-val2D_t = []; %Essai1EMG16plusTMS_wave_data.values(:,:,1)
-for i = 1:9
-    val2D_t = [val2D_t; Essai1EMG16plusTMS_wave_data.values(:,:,i)];
+val2D = []; %Essai1EMG16plusTMS_wave_data.values(:,:,1)
+for i = 1:nb_frames
+    val2D = [val2D; Essai1EMG16plusTMS_wave_data.values(:,:,i)];
+end
+
+%% Creating table for each EMG
+
+struct = s
+
+for i = 1:nb_EMGs
+    EMG = val2D(:,i);
+    name_EMG = 'EMG_'+ string(i);
+    s.(name_EMG) = EMG;
 end
