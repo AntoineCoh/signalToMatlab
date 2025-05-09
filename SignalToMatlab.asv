@@ -36,7 +36,7 @@ end
 
 %% Creating time
 
-nb_points = double(data.points);
-interval = double(data.interval);
-end_time = double(nb_points*interval);
-time = linspace(0,end_time,nb_points);
+nb_points = data.points;
+interval = data.interval;
+
+time = 0:
