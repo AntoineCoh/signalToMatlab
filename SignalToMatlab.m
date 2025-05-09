@@ -36,7 +36,29 @@ end
 
 %% Creating time
 
-nb_points = double(data.points);
+nb_points = double(length(EMG));
 interval = double(data.interval);
 end_time = double(nb_points*interval);
-time = linspace(0,end_time,nb_points);
+time = linspace(0,end_time,nb_points)';
+
+%% Plotting the EMGs
+
+list = fieldnames(EMG_signals);
+len = sqrt(length(list));
+if mod(len, 2) == 0
+    n = floor(len);
+    m = floor(len);
+elseif len == 1
+    n = 1, m = 1;
+else
+    n = floor(len)+1;
+    m = floor(len);
+
+end
+
+for i = 1:nb_EMGs
+    subplot(n,m,double(i))
+    y = EMG_signals.(list{i})(:);
+    plot(time, y)
+    title(list{i});
+end
