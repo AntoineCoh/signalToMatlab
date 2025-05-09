@@ -36,7 +36,7 @@ end
 
 %% Creating time
 
-nb_points = double(length(EMG));
+nb_points = double((data.points)*(nb_frames));
 interval = double(data.interval);
 end_time = double(nb_points*interval);
 time = linspace(0,end_time,nb_points)';
