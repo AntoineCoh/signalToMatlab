@@ -14,5 +14,6 @@ target = cell2struct(targetvalues, targetheaders, 2);
 %% Collecting the values
 
 headers = findHeaders(filename, 9);
-values = findValues(filename, 10);
-data = cell2struct(values, headers, 2);
+[values, EMG] = findValues(filename, 10);
+data = cell2struct(values, headers(1:end-1), 2);
+data.(headers(end)) = EMG;
