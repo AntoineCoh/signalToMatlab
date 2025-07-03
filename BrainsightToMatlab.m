@@ -11,9 +11,15 @@ targetheaders = findHeaders(filename, 7);
 targetvalues = findValues(filename, 8);
 target = cell2struct(targetvalues, targetheaders, 2);
 
-%% Collecting the values
+%% Collecting the values for each try
 
-headers = findHeaders(filename, 9);
-[values, EMG] = findValues(filename, 10);
-data = cell2struct(values, headers(1:end-1), 2);
-data.(headers(end)) = EMG;
+fid = fopen(filename, 'r');
+if fid == -1
+    error('Failed to open the file: %s', filename);
+end
+numLines = 0;
+while ~feof(fid)
+    fgetl(fid);  % Read and discard each line
+    numLines = numLines + 1;
+end
+fclose(fid);
