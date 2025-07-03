@@ -28,4 +28,5 @@ function [valuesList, EMG] = findValues(filename, N)
 
     % Removing the cell of the EMG because comes apart
     valuesList = valuesList(1:end-1);
+    valuesList{1} = matlab.lang.makeValidName(valuesList{1});
 end
