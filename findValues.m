@@ -1,4 +1,4 @@
-function valuesList = findValues(filename, N)
+function [valuesList, EMG] = findValues(filename, N)
     % Reading the file as a raw text to remove the comments
     filetxt = fopen(filename, 'r');   % opening the file
 
@@ -19,4 +19,13 @@ function valuesList = findValues(filename, N)
         valuesList{i} = str2double(valuesList{i});
     end
 
+    % Reaching the column of the EMG
+    iEMG = numel(valuesList);
+    dat = valuesList(iEMG);
+    splitDat = strsplit(dat{1}, ';');
+    % Converting the values in numerical values
+    EMG = cellfun(@str2double,splitDat);
+
+    % Removing the cell of the EMG because comes apart
+    valuesList = valuesList(1:end-1);
 end
