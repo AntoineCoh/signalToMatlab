@@ -23,3 +23,11 @@ while ~feof(fid)
     numLines = numLines + 1;
 end
 fclose(fid);
+
+for i = 9:2:numLines - 12
+    headers = findHeaders(filename, i);
+    [values, EMG] = findValues(filename, i+1);
+    oneSample = cell2struct(values, headers(1:end-1), 2);
+    oneSample.(headers{end}) = EMG;
+    data.(oneSample.(headers{1})) = oneSample(2:end);
+end
