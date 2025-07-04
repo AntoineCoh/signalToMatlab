@@ -3,16 +3,18 @@ clc;
 clear;
 close all;
 
-%% Processing the text
+%% Processing the text file for test
 filename = 'fichiers_test/MS.txt';
 
-% Collecting the headers for the target (if there is ONE target)
-targetheaders = findHeaders(filename, 7);
-targetvalues = findValues(filename, 8);
-target = cell2struct(targetvalues, targetheaders, 2);
+%% Looking for the file
+[file, file_dir] = uigetfile('*.txt');
+str_file = convertCharsToStrings(file);
+str_file_dir = convertCharsToStrings(file_dir);
+str_file_path = str_file_dir + str_file;
 
-%% Collecting the values for each try
+filename = str_file_path;
 
+% Looking for the number of lines in the file
 fid = fopen(filename, 'r');
 if fid == -1
     error('Failed to open the file: %s', filename);
