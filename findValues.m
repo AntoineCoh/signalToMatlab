@@ -1,12 +1,12 @@
 function [valuesList, EMG] = findValues(filename, N)
     % Reading the file as a raw text to remove the comments
-    filetxt = fopen(filename, 'r');   % opening the file
+    fid = fopen(filename, 'r');   % opening the file
 
     % Finding the line 
     for i = 1:N
-        line = fgetl(filetxt);
+        line = fgetl(fid);
     end
-    fclose(filetxt);   % closing the file
+    fclose(fid);   % closing the file
 
     % Erasing the "#" if the line is in comment
     line = strtrim(erase(line, '#'));
@@ -27,6 +27,6 @@ function [valuesList, EMG] = findValues(filename, N)
     EMG = cellfun(@str2double,splitDat);
 
     % Removing the cell of the EMG because comes apart
-    valuesList = valuesList(1:end-1);
+    valuesList = valuesList(1:end);
     valuesList{1} = matlab.lang.makeValidName(valuesList{1});
 end
