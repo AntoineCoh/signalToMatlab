@@ -1,12 +1,12 @@
 function headersList = findHeaders(filename, headerLineNumber)
     % Reading the file as a raw text to remove the comments
-    filetxt = fopen(filename, 'r');   % opening the file
+    fid = fopen(filename, 'r');   % opening the file
 
     % Finding the line 
     for i = 1:headerLineNumber
-        line = fgetl(filetxt);
+        line = fgetl(fid);
     end
-    fclose(filetxt);   % closing the file
+    fclose(fid);   % closing the file
 
     % Erasing the "#" if the line is in comment
     line = strtrim(erase(line, '#'));
