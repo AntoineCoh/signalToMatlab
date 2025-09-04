@@ -1,0 +1,87 @@
+function selectingMEP(data, MEP)
+
+    %{
+      data should be a matrix of the MEP wished to be analysed with the 
+      following format :
+               each column is a different MEP (MEP(i,:) - EMG data of ith MEP)
+    %}
+    
+    % Collecte info to plot the MEP
+    EMG_Start = data.samples{1, 1}.EMG_Start;   % start time of the signal
+    EMG_End = data.samples{1, 1}.EMG_End;       % end time of the signal
+    EMG_Res = data.samples{1, 1}.EMG_Res_;      % EMG's resolution
+    
+    Fs = 1000 / EMG_Res;    % EMG's frequency
+    t = -50:0.3333:150;     % time vector for plotting
+
+    nMEP = size(MEP, 2);
+
+      % Create a figure
+    f = figure('Name', 'MEP Selection', 'Position', [100 100 1000 600]);
+    ax = axes('Parent', f, 'Position', [0.1 0.2 0.6 0.7]);
+                                        % position in [%]
+    hold(ax, 'on');
+
+    % Plot all the MEPs
+    hLines = plot(ax, t, MEP');
+    xlabel(ax, 'Time (ms)');
+    ylabel(ax, 'Amplitude (mV)');
+    title(ax, 'Select MEPs using checkboxes');
+
+    % Create checkbox panel (empty)
+    panel = uipanel('Parent', f, 'Title', 'Select MEPs', ...
+                    'Position', [0.75 0.2 0.2 0.7]);
+
+    % Add all the checkboxes and their state
+    cb = gobjects(nMEP, 1);  % here to display graphics object
+    for i = 1:nMEP      % creating a button for each MEP
+        cb(i) = uicontrol(panel, 'Style', 'checkbox', ...   % uicontrol creates the push buttons
+                          'String', sprintf('MEP %d', i), ... % naming the MEP
+                          'Value', 1, ...  % initially all selected
+                          'Position', [10, 350 - 25*i, 100, 20], ... 
+                          'Callback', @(src,~) toggleMEP(src, hLines(i)));
+                                        % src = checbox that triggers callbak
+
+    end
+
+    % Button for analysis
+    uicontrol('Parent', f, 'Style', 'pushbutton', 'String', 'Run Analysis', ...
+              'Position', [400 20 200 40], ...
+              'Callback', @(~,~) runAnalysis(data, MEP, cb));
+end
+
+%% Function that will display or not MEP
+function toggleMEP(src, hLine)
+    if src.Value
+        hLine.Visible = 'on';
+    else
+        hLine.Visible = 'off';
+    end
+end
+
+%% Function that returns only the selected MEPs
+function runAnalysis(data, MEP, cb)
+    % Get which checkboxes are selected
+    selected = logical(arrayfun(@(x) x.Value, cb));
+
+    % if only want the MEP signals:
+    % % Extract only selected MEPs
+    % selectedMEPs = MEP(:, selected);   % rows = trials, cols = time points
+    % 
+    % % Transpose so that each column is one trial
+    % resultMatrix = selectedMEPs';      % now: (time points × trials)
+    % 
+    % % Display size in command window
+    % disp(size(resultMatrix));
+    % % Export to workspace
+    % assignin('base', 'SelectedMEPs', resultMatrix);
+
+    % Collect all the samples of selected MEPs
+    selectedMEPs = data.samples(1, selected);
+
+    % Export to workspace
+    assignin('base', 'SelectedMEPs', selectedMEPs);
+    
+    % Display confirmation in command window
+    fprintf('✅ Exported %d selected MEPs to variable "SelectedMEPs" in workspace.\n', sum(selected));
+end
