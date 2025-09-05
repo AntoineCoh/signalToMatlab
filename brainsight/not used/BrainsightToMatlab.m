@@ -25,11 +25,25 @@ while ~feof(fid)
     numLines = numLines + 1;
 end
 fclose(fid);
+
+%% Collecting the headers for the target (if there is ONE target)
+fid = fopen(filename, 'r');
+
+targetheaders = findHeaders(filename, 7);
+targetvalues = findValues(filename, 8);
+target = cell2struct(targetvalues, targetheaders, 2);
+
+%% Collecting the values for each try
+
 headers = findHeaders(filename, 9);
 
 for d = 10:numLines - 12
     [values, EMG] = findValues(filename, d);
-    oneSample = cell2struct(values, headers(1:end-1), 2);
-    oneSample.(headers{end}) = EMG;
-    data.(oneSample.(headers{1})) = oneSample;
+    oneSample = cell2struct(values, headers, 2);
+    if EMG ~= 1
+        oneSample.(headers{end}) = EMG;
+        % Converting the values in numerical values
+        EMG = cellfun(@str2double,splitDat);
+    end 
+    
 end

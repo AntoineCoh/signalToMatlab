@@ -6,7 +6,8 @@ clear all
 [files, path] = uigetfile('*.txt', 'Sélectionnez les fichiers', 'MultiSelect', 'on');
 
 % Collecting the name of the muscle
-reponse = inputdlg('Targeted muscle:', 'Info request', [1 40]);
+prompt = sprintf('Please specify the targeted muscle for this analysis:\n\n/!\\ It has to be the same name that the one given to the target.');
+reponse = inputdlg({prompt}, 'Info request', [1 40]);
 muscle = reponse{1};  % On récupère le texte saisi
 disp(['The targeted muscle is the ' muscle '.']);
 

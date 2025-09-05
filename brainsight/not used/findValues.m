@@ -22,9 +22,14 @@ function [valuesList, EMG] = findValues(filename, N)
     % Reaching the column of the EMG
     iEMG = numel(valuesList);
     dat = valuesList(iEMG);
-    splitDat = strsplit(dat{1}, ';');
-    % Converting the values in numerical values
-    EMG = cellfun(@str2double,splitDat);
+    if length(dat) > 50
+        splitDat = strsplit(dat{1}, ';');
+        % Converting the values into numerical values
+        EMG = cellfun(@str2double,splitDat);
+    else
+        EMG = 1;
+    end
+
 
     % Removing the cell of the EMG because comes apart
     valuesList = valuesList(1:end);
