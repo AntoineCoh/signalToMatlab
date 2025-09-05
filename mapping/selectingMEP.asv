@@ -1,4 +1,4 @@
-function selectingMEP(data)
+function selectingMEP(data, MEP)
 
     %{
       data should be a matrix of the MEP wished to be analysed with the 
@@ -24,8 +24,8 @@ function selectingMEP(data)
     end
 
       % Create a figure
-    f = uifigure('Name', 'MEP Selection', 'Position', [100 100 1000 600]);
-    ax = uiaxes('Parent', f, 'Position', [100 120 600 400]);
+    f = figure('Name', 'MEP Selection', 'Position', [100 100 1000 600]);
+    ax = axes('Parent', f, 'Position', [0.1 0.2 0.6 0.7]);
                                         % position in [%]
     hold(ax, 'on');
 
@@ -37,23 +37,24 @@ function selectingMEP(data)
 
     % Create checkbox panel (empty)
     panel = uipanel('Parent', f, 'Title', 'Select MEPs', ...
-                    'Position', [750 120 200 400], ...
-                    'Scrollable', 'on');
+                    'Position', [0.75 0.2 0.2 0.7]);
 
     % Add all the checkboxes and their state
     cb = gobjects(nMEP, 1);  % here to display graphics object
     for i = 1:nMEP      % creating a button for each MEP
-        cb(i) = uicheckbox(panel, ...
-                           'Text', sprintf('MEP %d', i), ...
-                           'Value', true, ...   % all selected initially
-                           'Position', [10, 650 - 25*i, 120, 20], ...
-                           'ValueChangedFcn', @(src,~) toggleMEP(src, hLines(i)));
+        cb(i) = uicontrol(panel, 'Style', 'checkbox', ...   % uicontrol creates the push buttons
+                          'String', sprintf('MEP %d', i), ... % naming the MEP
+                          'Value', 1, ...  % initially all selected
+                          'Position', [10, 350 - 25*i, 100, 20], ... 
+                          'Callback', @(src,~) toggleMEP(src, hLines(i)));
+                                        % src = checbox that triggers callbak
+
     end
 
     % Button for analysis
-    uibutton(f, 'Text', 'Export Selected MEPs', ...
-             'Position', [400 40 200 40], ...
-             'ButtonPushedFcn', @(~,~) runAnalysis(data, cb));
+    uicontrol('Parent', f, 'Style', 'pushbutton', 'String', 'Run Analysis', ...
+              'Position', [400 20 200 40], ...
+              'Callback', @(~,~) runAnalysis(data, MEP, cb));
 end
 
 %% Function that will display or not MEP
@@ -66,7 +67,7 @@ function toggleMEP(src, hLine)
 end
 
 %% Function that returns only the selected MEPs
-function runAnalysis(data, cb)
+function runAnalysis(data, MEP, cb)
     % Get which checkboxes are selected
     selected = logical(arrayfun(@(x) x.Value, cb));
 
