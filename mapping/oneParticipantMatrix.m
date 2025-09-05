@@ -17,15 +17,39 @@ str_file_dir = convertCharsToStrings(path);
 str_file_path = str_file_dir + str_file;
 data = parseTxtFile(str_file_path);
 
+participant = struct();
+
 % Collecting the good MEPs
-selectedMEP = selectingMEP(data);
-nSelectedMEPs = 
+
+selectedMEPs = selectingMEP(data);
+
+%%
+nSelectedMEPs = length(selectedMEPs);
+n = (1:nSelectedMEPs)';
+% Collecting MEP signals for the selected MEPs
+MEPSignals = collectingMEP(selectedMEPs);
+f = fieldnames(MEPSignals);
+participant.('MEP_Signal') = MEPSignals ; 
 
 % Collecting peak to peak values for the selected MEPs
-P2P = collectingPeak2Peak(selectedMEP);
+P2P = collectingPeak2Peak(selectedMEPs);
+P2PCol = [];
+for i = 1:nSelectedMEPs
+    P2PCol = [P2PCol; P2P.(f{i})];
+end
+participant.('Peak2Peak') = P2P ; 
 
 % Collecting latencies  for the selected MEPs
-lantencies = collectingLatency(selectedMEP);
+latencies = collectingLatency(selectedMEPs);
+latCol = [];
+for i = 1:nSelectedMEPs
+    latCol = [latCol; latencies.(f{i})];
+end
+participant.('Latency') = latencies ; 
 
 % Creating muscle columns
 muscleCol = repmat({muscle}, nSelectedMEPs, 1);
+participant.('Muscle') = muscle;
+
+indexes = {'MEP number', 'Muscle', 'Peak-to-Peak value', 'Latency'};
+
