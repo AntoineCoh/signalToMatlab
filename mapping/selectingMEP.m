@@ -1,4 +1,4 @@
-function selectingMEP(data)
+function selectedMEPs = selectingMEP(data)
 
     %{
       data should be a matrix of the MEP wished to be analysed with the 
@@ -12,9 +12,10 @@ function selectingMEP(data)
     EMG_Res = data.samples{1, 1}.EMG_Res_;      % EMG's resolution
     
     Fs = 1000 / EMG_Res;    % EMG's frequency
-    t = -50:0.3333:150;     % time vector for plotting
+    t = EMG_Start:0.3333:EMG_End;     % time vector for plotting
 
     nMEP = length(data.samples);
+    selectedMEPs = {};
 
     % Create a matrix with all the MEPs to plot
     allMEP = [] ;
@@ -50,10 +51,30 @@ function selectingMEP(data)
                            'ValueChangedFcn', @(src,~) toggleMEP(src, hLines(i)));
     end
 
+    % Initialize variables for waiting
+    f.UserData.completed = false;
+    f.UserData.selectedMEPs = {};
+
+
     % Button for analysis
     uibutton(f, 'Text', 'Export Selected MEPs', ...
              'Position', [400 40 200 40], ...
-             'ButtonPushedFcn', @(~,~) runAnalysis(data, cb));
+             'ButtonPushedFcn', @(~,~) extractingSelectedMEPs(data, cb,f));
+
+    % Wait for the user to complete selection
+    while isvalid(f) && ~f.UserData.completed
+        drawnow;  % Process GUI events
+        pause(0.1);  % Small pause to prevent excessive CPU usage
+    end
+
+     % Retrieve results
+    if isvalid(f)
+        selectedMEPs = f.UserData.selectedMEPs;
+        close(f);
+    else
+        selectedMEPs = {};
+    end
+
 end
 
 %% Function that will display or not MEP
@@ -66,8 +87,8 @@ function toggleMEP(src, hLine)
 end
 
 %% Function that returns only the selected MEPs
-function runAnalysis(data, cb)
-    % Get which checkboxes are selected
+function extractingSelectedMEPs(data, cb, f)
+   
     selected = logical(arrayfun(@(x) x.Value, cb));
 
     % if only want the MEP signals:
@@ -84,6 +105,10 @@ function runAnalysis(data, cb)
 
     % Collect all the samples of selected MEPs
     selectedMEPs = data.samples(1, selected);
+
+     % Store results and mark as completed
+    f.UserData.selectedMEPs = selectedMEPs;
+    f.UserData.completed = true;
 
     % Export to workspace
     assignin('base', 'SelectedMEPs', selectedMEPs);
