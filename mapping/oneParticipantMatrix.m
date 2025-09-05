@@ -52,4 +52,5 @@ muscleCol = repmat({muscle}, nSelectedMEPs, 1);
 participant.('Muscle') = muscle;
 
 indexes = {'MEP number', 'Muscle', 'Peak-to-Peak value', 'Latency'};
+participantTable = table(n, muscleCol, P2PCol, latCol, VariableNames=indexes);
 
