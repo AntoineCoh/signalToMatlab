@@ -1,4 +1,4 @@
-function selectingMEP(data, MEP)
+function selectedMEPs = selectingMEP(data)
 
     %{
       data should be a matrix of the MEP wished to be analysed with the 
@@ -12,9 +12,10 @@ function selectingMEP(data, MEP)
     EMG_Res = data.samples{1, 1}.EMG_Res_;      % EMG's resolution
     
     Fs = 1000 / EMG_Res;    % EMG's frequency
-    t = -50:0.3333:150;     % time vector for plotting
+    t = EMG_Start:0.3333:EMG_End;     % time vector for plotting
 
     nMEP = length(data.samples);
+    selectedMEPs = {};
 
     % Create a matrix with all the MEPs to plot
     allMEP = [] ;
@@ -24,8 +25,8 @@ function selectingMEP(data, MEP)
     end
 
       % Create a figure
-    f = figure('Name', 'MEP Selection', 'Position', [100 100 1000 600]);
-    ax = axes('Parent', f, 'Position', [0.1 0.2 0.6 0.7]);
+    f = uifigure('Name', 'MEP Selection', 'Position', [100 100 1000 600]);
+    ax = uiaxes('Parent', f, 'Position', [100 120 600 400]);
                                         % position in [%]
     hold(ax, 'on');
 
@@ -37,24 +38,43 @@ function selectingMEP(data, MEP)
 
     % Create checkbox panel (empty)
     panel = uipanel('Parent', f, 'Title', 'Select MEPs', ...
-                    'Position', [0.75 0.2 0.2 0.7]);
+                    'Position', [750 120 200 400], ...
+                    'Scrollable', 'on');
 
     % Add all the checkboxes and their state
     cb = gobjects(nMEP, 1);  % here to display graphics object
     for i = 1:nMEP      % creating a button for each MEP
-        cb(i) = uicontrol(panel, 'Style', 'checkbox', ...   % uicontrol creates the push buttons
-                          'String', sprintf('MEP %d', i), ... % naming the MEP
-                          'Value', 1, ...  % initially all selected
-                          'Position', [10, 350 - 25*i, 100, 20], ... 
-                          'Callback', @(src,~) toggleMEP(src, hLines(i)));
-                                        % src = checbox that triggers callbak
-
+        cb(i) = uicheckbox(panel, ...
+                           'Text', sprintf('MEP %d', i), ...
+                           'Value', true, ...   % all selected initially
+                           'Position', [10, 650 - 25*i, 120, 20], ...
+                           'ValueChangedFcn', @(src,~) toggleMEP(src, hLines(i)));
     end
 
+    % Initialize variables for waiting
+    f.UserData.completed = false;
+    f.UserData.selectedMEPs = {};
+
+
     % Button for analysis
-    uicontrol('Parent', f, 'Style', 'pushbutton', 'String', 'Run Analysis', ...
-              'Position', [400 20 200 40], ...
-              'Callback', @(~,~) runAnalysis(data, MEP, cb));
+    uibutton(f, 'Text', 'Export Selected MEPs', ...
+             'Position', [400 40 200 40], ...
+             'ButtonPushedFcn', @(~,~) extractingSelectedMEPs(data, cb,f));
+
+    % Wait for the user to complete selection
+    while isvalid(f) && ~f.UserData.completed
+        drawnow;  % Process GUI events
+        pause(0.1);  % Small pause to prevent excessive CPU usage
+    end
+
+     % Retrieve results
+    if isvalid(f)
+        selectedMEPs = f.UserData.selectedMEPs;
+        close(f);
+    else
+        selectedMEPs = {};
+    end
+
 end
 
 %% Function that will display or not MEP
@@ -67,8 +87,8 @@ function toggleMEP(src, hLine)
 end
 
 %% Function that returns only the selected MEPs
-function runAnalysis(data, MEP, cb)
-    % Get which checkboxes are selected
+function extractingSelectedMEPs(data, cb, f)
+   
     selected = logical(arrayfun(@(x) x.Value, cb));
 
     % if only want the MEP signals:
@@ -85,6 +105,10 @@ function runAnalysis(data, MEP, cb)
 
     % Collect all the samples of selected MEPs
     selectedMEPs = data.samples(1, selected);
+
+     % Store results and mark as completed
+    f.UserData.selectedMEPs = selectedMEPs;
+    f.UserData.completed = true;
 
     % Export to workspace
     assignin('base', 'SelectedMEPs', selectedMEPs);
