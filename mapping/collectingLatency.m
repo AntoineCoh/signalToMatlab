@@ -4,10 +4,10 @@ function latencies = collectingLatency(selectedMEP)
 %}
     
     latencies = struct();
-    n = length(selectedMEP.samples);
+    n = length(selectedMEP);
 
     for i = 1:n
-        sampleName = matlab.lang.makeValidName(selectedMEP.samples{1, i}.Sample_Name);
-        latencies.(sampleName) = selectedMEP.samples{1,i}.EMG_Latency_1;
+        sampleName = matlab.lang.makeValidName(selectedMEP{1, i}.Sample_Name);
+        latencies.(sampleName) = selectedMEP{1,i}.EMG_Latency_1;
     end
 end
