@@ -20,9 +20,15 @@ data = parseTxtFile(str_file_path);
 
 participant = struct();
 
+% Collecting the time to plot the MEPs then
+time = timeDefinition(data);
+
+% Collecting the MEPs in one big matrix
+allMEP = mepMatrix(data);
+
 % Collecting the good MEPs
 
-selectedMEPs = selectingMEP(data);
+selectedMEPs = selectingMEP(allMEP, time);
 
 %%
 nSelectedMEPs = length(selectedMEPs);
