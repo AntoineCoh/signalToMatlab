@@ -1,4 +1,4 @@
-function selectedMEPs = selectingMEP(data)
+function selectedMEPs = selectingMEP(allMEP, t)
 
     %{
       data should be a matrix of the MEP wished to be analysed with the 
@@ -6,24 +6,6 @@ function selectedMEPs = selectingMEP(data)
                each column is a different MEP (MEP(i,:) - EMG data of ith MEP)
     %}
     
-    % Collecte info to plot the MEP
-    EMG_Start = data.samples{1, 1}.EMG_Start;   % start time of the signal
-    EMG_End = data.samples{1, 1}.EMG_End;       % end time of the signal
-    EMG_Res = data.samples{1, 1}.EMG_Res_;      % EMG's resolution
-    
-    Fs = 1000 / EMG_Res;    % EMG's frequency
-    t = EMG_Start:0.3333:EMG_End;     % time vector for plotting
-
-    nMEP = length(data.samples);
-    selectedMEPs = {};
-
-    % Create a matrix with all the MEPs to plot
-    allMEP = [] ;
-    for i = 1:nMEP
-        MEP = data.samples{1,i}.EMG_Data_1 ;
-        allMEP = [allMEP, MEP'];
-    end
-
       % Create a figure
     f = uifigure('Name', 'MEP Selection', 'Position', [100 100 1000 600]);
     ax = uiaxes('Parent', f, 'Position', [100 120 600 400]);
@@ -31,7 +13,7 @@ function selectedMEPs = selectingMEP(data)
     hold(ax, 'on');
 
     % Plot all the MEPs
-    hLines = plot(ax, t, allMEP');
+    hLines = plot(ax, t', allMEP);
     xlabel(ax, 'Time (ms)');
     ylabel(ax, 'Amplitude (mV)');
     title(ax, 'Select MEPs using checkboxes');
@@ -42,6 +24,8 @@ function selectedMEPs = selectingMEP(data)
                     'Scrollable', 'on');
 
     % Add all the checkboxes and their state
+    nMEP = size(allMEP, 2);
+
     cb = gobjects(nMEP, 1);  % here to display graphics object
     for i = 1:nMEP      % creating a button for each MEP
         cb(i) = uicheckbox(panel, ...
@@ -59,7 +43,7 @@ function selectedMEPs = selectingMEP(data)
     % Button for analysis
     uibutton(f, 'Text', 'Export Selected MEPs', ...
              'Position', [400 40 200 40], ...
-             'ButtonPushedFcn', @(~,~) extractingSelectedMEPs(data, cb,f));
+             'ButtonPushedFcn', @(~,~) extractingSelectedMEPs(allMEP, cb,f));
 
     % Wait for the user to complete selection
     while isvalid(f) && ~f.UserData.completed
@@ -87,7 +71,7 @@ function toggleMEP(src, hLine)
 end
 
 %% Function that returns only the selected MEPs
-function extractingSelectedMEPs(data, cb, f)
+function extractingSelectedMEPs(allMEP, cb, f)
    
     selected = logical(arrayfun(@(x) x.Value, cb));
 
@@ -104,7 +88,7 @@ function extractingSelectedMEPs(data, cb, f)
     % assignin('base', 'SelectedMEPs', resultMatrix);
 
     % Collect all the samples of selected MEPs
-    selectedMEPs = data.samples(1, selected);
+    selectedMEPs = allMEP(:, selected);
 
      % Store results and mark as completed
     f.UserData.selectedMEPs = selectedMEPs;
