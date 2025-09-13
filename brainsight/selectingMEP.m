@@ -1,4 +1,4 @@
-function selectedMEPs = selectingMEP(allMEP, t)
+function [selectedMEPs, selectedIdx] = selectingMEP(allMEP, t)
 
     %{
       data should be a matrix of the MEP wished to be analysed with the 
@@ -38,7 +38,7 @@ function selectedMEPs = selectingMEP(allMEP, t)
     % Initialize variables for waiting
     f.UserData.completed = false;
     f.UserData.selectedMEPs = {};
-
+    f.UserData.selectedIdx  = [];
 
     % Button for analysis
     uibutton(f, 'Text', 'Export Selected MEPs', ...
@@ -54,9 +54,11 @@ function selectedMEPs = selectingMEP(allMEP, t)
      % Retrieve results
     if isvalid(f)
         selectedMEPs = f.UserData.selectedMEPs;
+        selectedIdx  = f.UserData.selectedIdx;
         close(f);
     else
         selectedMEPs = {};
+        selectedIdx  = [];
     end
 
 end
@@ -88,15 +90,18 @@ function extractingSelectedMEPs(allMEP, cb, f)
     % assignin('base', 'SelectedMEPs', resultMatrix);
 
     % Collect all the samples of selected MEPs
-    selectedMEPs = allMEP(:, selected);
-
-     % Store results and mark as completed
+    selectedIdx = find(selected);                 % indices of selected MEPs
+    selectedMEPs = allMEP(:, selected);           % actual MEP signals
+    
     f.UserData.selectedMEPs = selectedMEPs;
+    f.UserData.selectedIdx = selectedIdx;
     f.UserData.completed = true;
 
     % Export to workspace
     assignin('base', 'SelectedMEPs', selectedMEPs);
+    assignin('base', 'SelectedIdx', selectedIdx);
     
     % Display confirmation in command window
     fprintf('✅ Exported %d selected MEPs to variable "SelectedMEPs" in workspace.\n', sum(selected));
+    
 end
