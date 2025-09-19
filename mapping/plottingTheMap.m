@@ -41,7 +41,7 @@ function plot = plottingTheMap(X, Y, Z, PP, muscle, option)
     trisurf(K, X', Y', Z', PP', 'EdgeColor', 'none');    % X, Y, Z, and PP vectors must be in column
     colorbar;
     shading interp; % This gives you the smooth color transitions
-    camlight; lighting gouraud;
+    camlight; lightig gouraud;
     xlabel('X'); ylabel('Y'); zlabel('Z');
     title('3D TMS Surface Map');
 

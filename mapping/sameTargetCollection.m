@@ -11,9 +11,12 @@ function S = sameTargetCollection(data)
 
         % If field doesn't exist yet, initialize it as an empty struct array
         if ~isfield(S, fieldName)
-            S.(fieldName) = struct([]);
+            S.(fieldName) = struct();
         end
 
         % Append the struct to the struct array
-        S.(fieldName) = [S.(fieldName) sample];
+        sampleName = matlab.lang.makeValidName(sample.Sample_Name);
+        S.(fieldName).(sampleName) = sample;
     end
+
+   
