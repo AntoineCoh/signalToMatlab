@@ -12,16 +12,28 @@ str_file_path = str_file_dir + str_file;
 
 tmp = load(str_file_path);
 fields_tmp = fieldnames(tmp);
-data = tmp.(fields_tmp{1});
+raw_indexed_data = tmp.(fields_tmp{1});
+raw_fields = fieldnames(raw_indexed_data);
 
-fields = fieldnames(data);
+% Reindexing the structure to use lable easier
+data = struct();
+for i =1:3
+    data.(raw_fields{i}) = raw_indexed_data.(raw_fields{i});
+end
+for i = 4:numel(raw_fields)
+    oldName = raw_fields{i};
+    newName = oldName(1:end-2);   % remove last 3 chars
+    data.(newName) = raw_indexed_data.(oldName);
+end
+
+
 
 %% Collecting signals : EMG / Stim
 
 % Collecting the EMG signal and filtrating it, when position is EMG_5 
 % TODO: look how to select the adquate signal
-EMG = data.EMG_5.dat;
-freq_EMG = data.EMG_5.FreqS;
+EMG = data.EMG.dat;
+freq_EMG = data.EMG.FreqS;
 
 % Using SDF's filtering function
 EMG_filtered = filtrage(EMG, freq_EMG, 20, 400);
@@ -29,8 +41,8 @@ EMG_filtered = filtrage(EMG, freq_EMG, 20, 400);
 % Collecting stim signal taking into account that the signal is acquired 
 % on the ADC0
 
-stim = data.ADC0_1.dat;
-freq_stim = data.ADC0_1.FreqS;
+stim = data.ADC0.dat;
+freq_stim = data.ADC0.FreqS;
 
 %% Matching the data in frequency
 % taking the EMG's one: freq_EMG
@@ -66,8 +78,8 @@ for t = 1:length(listOfStim)
     if minus < 1
         minus = 1;
     end
-    if plus > length(EMG_filtred)
-        plus = length(EMG_filtred);
+    if plus > length(EMG_filtered)
+        plus = length(EMG_filtered);
     end
 
     wdw = [minus, plus];
@@ -80,7 +92,7 @@ allMEP = [];
 for w = 1:length(MEPWindows)
     fstart = MEPWindows(w,1);
     fend   = MEPWindows(w,2);
-    EMG_window = EMG_filtred(fstart:fend);
+    EMG_window = EMG_filtered(fstart:fend);
     allMEP = [allMEP, EMG_window];
 end
 
@@ -102,10 +114,10 @@ for si = 1:size(SelectedMEPs, 2)
     stdDevs = [stdDevs, stdValue];
 end
 
-filtredSelectedMEP = [];
+filteredSelectedMEP = [];
 for smep = 1:size(SelectedMEPs,2)
     MEPF = SelectedMEPs(:, smep)-means(smep);
-    filtredSelectedMEP = [filtredSelectedMEP, MEPF];
+    filteredSelectedMEP = [filteredSelectedMEP, MEPF];
 end
 
 % %% Reaching the number of frames / EMGs
@@ -155,4 +167,4 @@ end
 %     y = EMG_signals.(list{i})(:);
 %     plot(time, y)
 %     title(list{i});
-end
+% end

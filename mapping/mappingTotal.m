@@ -19,16 +19,18 @@ reponse = inputdlg('Targeted muscle:', 'Info request', [1 40]);
 muscle = reponse{1};  % On récupère le texte saisi
 disp(['The targeted muscle is the ' muscle '.']);
 
+% Collecting the data
+str_file = convertCharsToStrings(files);
+str_file_dir = convertCharsToStrings(path);
+str_file_path = str_file_dir + str_file;
+data = parseTxtFile(str_file_path);
+[X, Y, Z, PP] = collectingCoord(data, muscle);
+
 %%
 if n > 1
     for i = 1:length(files)
         sess = "Session" + num2str(i);
         Sessions = [Sessions, sess];
-        str_file = convertCharsToStrings(files(i));
-        str_file_dir = convertCharsToStrings(path);
-        str_file_path = str_file_dir + str_file;
-        data = parseTxtFile(str_file_path);
-        [X, Y, Z, PP] = collectingCoord(data);
         coord.X.(sess) = X;
         coord.Y.(sess) = Y;
         coord.Z.(sess) = Z;
@@ -59,11 +61,6 @@ if n > 1
 
 else
     sess = "Session";
-    str_file = convertCharsToStrings(files);
-    str_file_dir = convertCharsToStrings(path);
-    str_file_path = str_file_dir + str_file;
-    data = parseTxtFile(str_file_path);
-    [X, Y, Z, PP] = collectingCoord(data, muscle);
     coord.X.(sess) = X;
     coord.Y.(sess) = Y;
     coord.Z.(sess) = Z;
