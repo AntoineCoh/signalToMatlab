@@ -1,4 +1,4 @@
 *.asv
-.DS_Store
-fichiers_tests/
+*.DS_Store
+fichiers_test
 *pptx
