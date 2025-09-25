@@ -15,7 +15,7 @@ function [selectedMEPs, selectedIdx] = selectingMEP(allMEP, t)
     % Plot all the MEPs
     hLines = plot(ax, t', allMEP);
     xlabel(ax, 'Time (ms)');
-    ylabel(ax, 'Amplitude (mV)');
+    ylabel(ax, 'Amplitude (V)');
     title(ax, 'Select MEPs using checkboxes');
 
     % Create checkbox panel (empty)
@@ -31,14 +31,14 @@ function [selectedMEPs, selectedIdx] = selectingMEP(allMEP, t)
         cb(i) = uicheckbox(panel, ...
                            'Text', sprintf('MEP %d', i), ...
                            'Value', true, ...   % all selected initially
-                           'Position', [10, 650 - 25*i, 120, 20], ...
+                           'Position', [10, nMEP*26 - 25*i, 120, 20], ...
                            'ValueChangedFcn', @(src,~) toggleMEP(src, hLines(i)));
     end
 
     % Initialize variables for waiting
     f.UserData.completed = false;
     f.UserData.selectedMEPs = {};
-
+    f.UserData.selectedIdx  = [];
 
     % Button for analysis
     uibutton(f, 'Text', 'Export Selected MEPs', ...
@@ -54,9 +54,11 @@ function [selectedMEPs, selectedIdx] = selectingMEP(allMEP, t)
      % Retrieve results
     if isvalid(f)
         selectedMEPs = f.UserData.selectedMEPs;
+        selectedIdx  = f.UserData.selectedIdx;
         close(f);
     else
         selectedMEPs = {};
+        selectedIdx  = [];
     end
 
 end
@@ -94,10 +96,10 @@ function extractingSelectedMEPs(allMEP, cb, f)
     f.UserData.selectedMEPs = selectedMEPs;
     f.UserData.selectedIdx = selectedIdx;
     f.UserData.completed = true;
-    f.UserData.completed = true;
 
     % Export to workspace
-    assignin('base', 'SelectedMEPs', selectedMEPs);
+    % assignin('base', 'SelectedMEPs', selectedMEPs);
+    % assignin('base', 'SelectedIdx', selectedIdx);
     
     % Display confirmation in command window
     fprintf('✅ Exported %d selected MEPs to variable "SelectedMEPs" in workspace.\n', sum(selected));
