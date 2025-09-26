@@ -1,5 +1,9 @@
 *.asv
 *.DS_Store
 fichiers_test
+<<<<<<< HEAD
 *pptx
 *zip
+=======
+*pptx
+>>>>>>> origin/signal_analysis
