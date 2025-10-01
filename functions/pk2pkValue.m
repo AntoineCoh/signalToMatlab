@@ -1,6 +1,7 @@
 function pk2pk = pk2pkValue(MEP, window)
     
-    [w_start, w_end] = [window(1), window(2)];
+    w_start = window(1);
+    w_end = window(2);
 
     restrictedMEP = MEP(w_start:w_end);
 
