@@ -1,5 +1,6 @@
 *.asv
 *.DS_Store
 fichiers_test
-*pptx
-*zip
+*.pptx
+*.zip
+*.mat
