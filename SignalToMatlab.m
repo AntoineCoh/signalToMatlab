@@ -19,6 +19,8 @@ clc
 clear
 close all
 
+%lets goo
+
 %% Export .cfs to .mat
 % IF ON MACOS, IGNORE THIS SECTION AND RUN THE NEXT ONE
 
