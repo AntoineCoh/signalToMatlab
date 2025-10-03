@@ -1,35 +1,64 @@
-%% Details about the code
+%% About this script
 %{
-    This script enables to select and collect MEP
-    wished to be analysed from EMG data collected 
+    This script lets you select and extract MEPs from EMG data recorded
     with the CED1401 system and Signal software.
 
-    For now, it asks for one .mat file. Hence, the
-    .cfs file from Signal should have already been
-    converted through Fabien's function: 
-                                    'readCFSfile.m'
-    This latter function does not work on Mac.
+    It expects a single .mat file as input. Therefore, the original
+    Signal .cfs file must first be converted using Fabien's function:
+                                       'readCFSfile.m'
+    Note: this function does not work on macOS.
 
     * * * * *
 
-    If any issue, please ask me.
-    Mathilde
+    If you run into any issue, please contact me.
+    — Mathilde
 %}
-
 
 %% Clearing the environment
 clc
 clear
 close all
 
+%% Export .cfs to .mat
+% IF ON MACOS, IGNORE THIS SECTION AND RUN THE NEXT ONE
+
+% 1) Select the .cfs file
+[cfFile, cfPath] = uigetfile({'*.cfs','Signal files (*.cfs)'}, ...
+                              'Select the .cfs file');
+if isequal(cfFile,0)
+    error('No .cfs file selected. Operation cancelled.');
+end
+cfFull = fullfile(cfPath, cfFile);
+
+% 2) Read the .cfs using Fabien's function
+tmp = readCFSfile(cfFull);
+
+% 3) Choose the name and location for saving the .mat
+[~, baseName] = fileparts(cfFile);
+defaultMatName = [regexprep(baseName, '\s+', '_') '.mat']; % replace spaces with "_"
+[matFile, matPath] = uiputfile({'*.mat','MAT-file (*.mat)'}, ...
+                               'Save as...', defaultMatName);
+if isequal(matFile,0)
+    error('Save cancelled.');
+end
+matFull = fullfile(matPath, matFile);
+
+% 4) Save
+save(matFull, 'tmp', '-v7.3');
+fprintf('MAT file saved: %s\n', matFull);
 
 %% Looking for the file & loading the data
+% IF ON WINDOWS, YOU CAN DIRECTLY RUN THE ABOVE SECTION AND PASS THIS ONE
+
 [file, file_dir] = uigetfile('*.mat');
 str_file = convertCharsToStrings(file);
 str_file_dir = convertCharsToStrings(file_dir);
 str_file_path = str_file_dir + str_file;
-
 tmp = load(str_file_path);
+fprintf('OK — MAT loaded (%s). Fields reindexed.\n', str_file);
+                                % POURQUOI ??
+%% Cleaning the field names
+
 fields_tmp = fieldnames(tmp);
 raw_indexed_data = tmp.(fields_tmp{1});
 raw_fields = fieldnames(raw_indexed_data);
@@ -45,165 +74,149 @@ for i = 4:numel(raw_fields)
     data.(newName) = raw_indexed_data.(oldName);
 end
 
+%% Get signals : EMG / Stim
 
-
-%% Collecting signals : EMG / Stim
-
-% Collecting the EMG signal and filtrating it
-% TODO: can have several EMG channels
-%       => look how to select the adquate signal
+% Get the EMG signal and filter it
+% TODO: there may be multiple EMG channels
+%       => decide how to select the appropriate channel
 EMG = data.EMG.dat;
 freq_EMG = data.EMG.FreqS;
 
 % Using Silvère's filtering function
 EMG_filtered = filtrage(EMG, freq_EMG, 20, 400);
 
-% Collecting stim signal considering
-% the signal is acquired on the ADC0
+% Get the stimulation signal considering
+% the signal was acquired on the ADC0
 stim = data.ADC0.dat;
 freq_stim = data.ADC0.FreqS;
 
-%% Matching the data in frequency
-% used frequency = EMG's one = freq_EMG
+fprintf('OK — EMG filtered (20–400 Hz, Fs=%.1f Hz). Stim loaded (Fs=%.1f Hz).\n', freq_EMG, freq_stim);
 
+%% Match sampling rates (resample stim to EMG rate)
+% Target sampling frequency = EMG sampling rate = freq_EMG
 
-end_time_EMG = length(EMG)*(1/freq_EMG);
+end_time_EMG = length(EMG) * (1/freq_EMG);
 time_EMG = linspace(0, end_time_EMG, length(EMG));
 new_time_EMG = 0:(1/freq_EMG):end_time_EMG;
 
 end_time_stim = length(stim)*(1/freq_stim);
-time_stim = linspace(0, end_time_stim, length(stim));
-           % actual time vector of the recorder stim
-new_time_stim = 0:(1/freq_EMG):end_time_stim;
-           % new time vector of the stim matchnig the frequency of the EMG
+time_stim = linspace(0, end_time_stim, length(stim));   % actual time vector of the recorder stim
+new_time_stim = 0:(1/freq_EMG):end_time_stim;           % new time vector of the stim matchnig the frequency of the EMG
 
-% Interpolation
+% Interpolation stim onto the EMG time base
 new_stim = interp1(time_stim, stim, new_time_stim, 'spline');
-           % interpolates the stim signal ('stim') on the new time vector
-           % ('new_time_stim')
 
-%% Looking for the stim times
+%% Detect stimulation times
 
-listOfStim = [] ;   % list of all the stimulation times
+listOfStim = [] ;   % indices of detected stim events
 i = 1 ;
+Thr = 0.5; % threshold: stim signal above 0.5 V
 while i < length(new_stim)
-    if new_stim(i) > 0.5    % looks when the stim signal is above 0.5V
-        listOfStim = [listOfStim, i];   % if so, collect time of moment
-        i = i+300;  % goes far enough to be back in a time window where
-                    % stim signal is < 0.5V
+    if new_stim(i) > Thr    % looks when the stim signal is above 0.5V
+        listOfStim = [listOfStim, i];   % store index
+        i = i+300;    % skip ahead to exit the high-voltage plateau
+                      % and avoid multiple detections for a single pulse
     else
         i = i+1;    % if not, looks for the next piece of signal
     end
 end
 
-%% Looking for the MEP windows
-% Determining the window in which the MEP should be (stim-100 ms, stim+500 ms)
+fprintf('OK — Stim detection completed.\n')
+
+%% Build MEP windows
+% Define the window where the MEP should appear (stim -100 ms, stim +500 ms)
 
 MEPWindows = [];
 for t = 1:length(listOfStim)
-    minus = round(listOfStim(t)-0.1*freq_EMG) ; % time of stim-100ms
-    plus = round(listOfStim(t)+0.5*freq_EMG) ;  % time of stim+500ms
-    if minus < 1    % checks if the minus is not < 0,
-                    % i.e. not before the acquired data
+    minus = round(listOfStim(t) - 0.1 * freq_EMG) ; % time of stim - 100ms
+    plus = round(listOfStim(t) + 0.5 * freq_EMG) ;  % time of stim + 500ms
+    if minus < 1    % ensure the lower bound is within data
         minus = 1;
     end
-    if plus > length(EMG_filtered)  % checks if the plus is not outside
-                                    % the acquired data window
+    if plus > length(EMG_filtered)  % ensure the upper bound is within data
         plus = length(EMG_filtered);
     end
 
-    wdw = [minus, plus];            % sets the window around the stim time
-    MEPWindows = [MEPWindows; wdw]; % collect the windows
+    wdw = [minus, plus];            % time indexes of the window around the stim
+    MEPWindows = [MEPWindows; wdw]; % collect windows
 end
 
 
-% Collecting all the MEP separately
-allMEP = [];    % will store all the MEP within their predetermined windows
+% Extract all MEP segments
+allMEP = [];     % columns will be individual MEP segments
 for w = 1:length(MEPWindows)
-    fstart = MEPWindows(w,1);   % for the window w, takes the starting time
-    fend   = MEPWindows(w,2);   % for the window w, takes the ending time
-    EMG_window = EMG_filtered(fstart:fend); % collects the window in the
-                                            % EMG signal
-    allMEP = [allMEP, EMG_window];  % collects it
+    fstart = MEPWindows(w,1);               % window start index
+    fend   = MEPWindows(w,2);               % window end index
+    EMG_window = EMG_filtered(fstart:fend); % segment from EMG signal
+    allMEP = [allMEP, EMG_window];          % append as a new column
 end
 
-% Creating a time vector (needed for plotting)
-time =  linspace(-100,500, (length(allMEP)));
-% Selecting the MEPs
+% Create a time vectorfor plotting (in ms, aligned with the window definition)
+time =  linspace(-100, 500, (length(allMEP)));
+
+% Select valid MEPs (manual/GUI function)
 [selectedMEPs, selectedIdx] = selectingMEP(allMEP, time);
 
-structMEPs = namingMEP(selectedMEPs, selectedIdx);   % creates a struct,
-                                                    % if needed later
+%% MEPs structure 
+% Create MEP struct (keep valid MEPs and rename to MEP_01, MEP_02, ... original naming is reported too)
+% and MEP_SELECTION struct (report which MEPs were rejected, which were kept,
+% and the total number initially detected)
 
+[MEP, MEP_SELECTION] = renumberLogMEP(selectedMEPs, selectedIdx, allMEP);
+
+% Time centering aroung 0 ms = stim index in MEP window
+stimIdx0 = round(0.1 * freq_EMG); % sample for 100 ms (0-based)
+
+% Store at global level (only valid) % ???
+MEP.Meta.Time_ms = time(:).';
+MEP.Meta.StimIdx = stimIdx0 + 1; % 1-based % ???
+MEP.Meta.Fs      = freq_EMG;
+% Meta ???
+
+% Create a struct with all individual MEPs using original naming
+originalNamedMEPs = namingMEP(selectedMEPs, selectedIdx);   % creates a struct,
+                                                    % if needed later
+fprintf('OK — MEP struct created and renumbered (MEP_01..MEP_%02d). Selection log stored.\n', size(selectedMEPs,2));
 
 
 
 %% Analyse of the MEPS
-% pas fini / pas prendre en considération ou à améliorer
 
-means = [];
-stdDevs = [];
-stm = round(0.1*freq_EMG) ; 
+% Detect valid MEP windows + peak-to-peak + latency (automatic)
+[MEP, T] = detectMEPOnsetOffset(MEP, 'Fs', freq_EMG);
+fprintf('OK — Onset/offset, peak-to-peak (p2p), latency, and AUC extracted automatically.\n');
 
-for si = 1:size(selectedMEPs, 2)
-    mepSignal = selectedMEPs(:,si);
-    meanValue = mean(mepSignal(1:stm));
-    stdValue = std(mepSignal(1:stm));
-    means = [means, meanValue];
-    stdDevs = [stdDevs, stdValue];
+%% === CSV export for statistical analysis: 1 row per MEP; columns = P2P, Latency, AUC ===
+
+% 1) Find the AUC column in T (robust to different naming conventions)
+if ismember('AUC', T.Properties.VariableNames)
+    AUCcol = T.AUC;
+elseif ismember('AUC_uVms', T.Properties.VariableNames)
+    AUCcol = T.AUC_uVms;
+elseif ismember('AreaRect_uVms', T.Properties.VariableNames)
+    AUCcol = T.AreaRect_uVms;
+else
+    error('AUC not found in table T. Make sure you added AUC/AUC_uVms/AreaRect_uVms in detectMEPOnsetOffset.');
 end
 
-filteredSelectedMEP = [];
-for smep = 1:size(selectedMEPs,2)
-    MEPF = selectedMEPs(:, smep)-means(smep);
-    filteredSelectedMEP = [filteredSelectedMEP, MEPF];
-end
+% 2) Build the table to export (keep also the MEP label)
+ExportTab = table( ...
+    T.Label, ...
+    T.P2P_uV, ...
+    T.Latency_ms, ...
+    AUCcol, ...
+    'VariableNames', {'MEP_Label','P2P_uV','Latency_ms','AUC_uVms'});
 
-% %% Reaching the number of frames / EMGs
-% 
-% nb_frames = data.frames;
-% nb_EMGs = data.chans;
-% 
-% %% Concatenating all the frame to have one single, continuous, signal
-% 
-% val2D = []; %Essai1EMG16plusTMS_wave_data.values(:,:,1)
-% for i = 1:nb_frames
-%     val2D = [val2D; data.values(:,:,i)];
-% end
-% 
-% %% Creating table for each EMG
-% 
-% for i = 1:nb_EMGs
-%     EMG = val2D(:,i);
-%     name_EMG = 'EMG_'+ string(i);
-%     EMG_signals.(name_EMG) = EMG;
-% end
-% 
-% %% Creating time
-% 
-% nb_points = double((data.points)*(nb_frames));
-% interval = double(data.interval);
-% end_time = double(nb_points*interval);
-% time = linspace(0,end_time,nb_points)';
-% 
-% %% Plotting the EMGs
-% 
-% list = fieldnames(EMG_signals);
-% len = sqrt(length(list));
-% if mod(len, 2) == 0
-%     n = floor(len);
-%     m = floor(len);
-% elseif len == 1
-%     n = 1, m = 1;
-% else
-%     n = floor(len)+1;
-%     m = floor(len);
-% 
-% end
-% 
-% for i = 1:nb_EMGs
-%     subplot(n,m,double(i))
-%     y = EMG_signals.(list{i})(:);
-%     plot(time, y)
-%     title(list{i});
-% end
+% 3) Propose a default file name (same folder as the .mat)
+[~, baseMatName] = fileparts(char(str_file));  % get .mat file name without extension
+defaultCSV = fullfile(char(str_file_dir), sprintf('%s_MEP_metrics.csv', baseMatName));
+
+% 4) Save location
+[csvFile, csvPath] = uiputfile({'*.csv','CSV file (*.csv)'}, 'Save MEP metrics as...', defaultCSV);
+if isequal(csvFile,0)
+    warning('CSV export canceled by user.');
+else
+    outCSV = fullfile(csvPath, csvFile);
+    writetable(ExportTab, outCSV);
+    fprintf('CSV exported: %s (N=%d MEPs)\n', outCSV, height(ExportTab));
+end
