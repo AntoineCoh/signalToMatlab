@@ -204,18 +204,18 @@ fprintf('OK — Onset/offset, peak-to-peak (p2p), latency, and AUC extracted aut
 %% === CSV export for statistical analysis: 1 row per MEP; columns = P2P, Latency, AUC ===
 
 % 1) Build the table to export (keep also the MEP label)
-% Convert T.Signal to a string to export it to csv after:
-T.SignalString = cellfun(@(x) sprintf('%g,', x), T.Signal, 'UniformOutput', false);
-T.SignalString = cellfun(@(s) s(1:end-1), T.SignalString, 'UniformOutput', false);
+%% Structure export
 
-ExportTab = table( ...
-    T.Label, ...
-    T.P2P_uV, ...
-    T.Latency_ms, ...
-    T.AUC_uVms, ...
-    T.SPduration_ms, ...
-    T.SignalString, ...
-    'VariableNames', {'MEP_Label','P2P_uV','Latency_ms','AUC_uVms','SP_ms','Raw_signal'});
+[~, baseMatName] = fileparts(char(str_file));  % get .mat file name without extension
+default=fullfile(char(str_file_dir), sprintf('%s_MEPs',baseMatName));
+[matFile, matPath] = uiputfile({'*.mat'},'Save MEP structure as :', default);
+if isequal(matFile,0)
+    warning('Export canceled.');
+else
+    out = fullfile(matPath, matFile);
+    save(out, "MEP");
+    fprintf('MEP structure exported: %s\n', out);
+end
 
 % 2) Propose a default file name (same folder as the .mat)
 [~, baseMatName] = fileparts(char(str_file));  % get .mat file name without extension
