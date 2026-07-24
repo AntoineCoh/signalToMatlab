@@ -62,20 +62,23 @@ tmp = load(str_file_path);
 fprintf('OK — MAT loaded (%s). Fields reindexed.\n', str_file);
 
 %% Selecting the EMG used
-msg = sprintf('Enter the number of the\nEMG that was used:');
-NumEMG = inputdlg(msg, 'Input Required', 1, {'0'});
-EMG_field = "EMG_"+NumEMG{1};
-%% Cleaning the field names
 
 fields_tmp = fieldnames(tmp);
 raw_indexed_data = tmp.(fields_tmp{1});
 raw_fields = fieldnames(raw_indexed_data);
+nb_EMGs = sum(startsWith(raw_fields, 'EMG'));
+
+msg = sprintf('Enter the number of the\nEMG that was used:');
+NumEMG = inputdlg(msg, 'Input Required', 1, {'0'});
+EMG_field = "EMG_"+NumEMG{1};
+
+%% Cleaning the field names
+
 % Reindexing the structure to use labels easier
 data = struct();
 for i =1:3
     data.(raw_fields{i}) = raw_indexed_data.(raw_fields{i});
 end
-nb_EMGs = 1;
 for i = 4:numel(raw_fields)-nb_EMGs
     oldName = raw_fields{i};
     newName = oldName(1:end-2);   % removes the last 2 chars ('_X')
@@ -201,9 +204,6 @@ fprintf('OK — MEP struct created and renumbered (MEP_01..MEP_%02d). Selection 
 [MEP, T] = detectMEPOnsetOffset(MEP, 'Fs', freq_EMG);
 fprintf('OK — Onset/offset, peak-to-peak (p2p), latency, and AUC extracted automatically.\n');
 
-%% === CSV export for statistical analysis: 1 row per MEP; columns = P2P, Latency, AUC ===
-
-% 1) Build the table to export (keep also the MEP label)
 %% Structure export
 
 [~, baseMatName] = fileparts(char(str_file));  % get .mat file name without extension
@@ -217,8 +217,23 @@ else
     fprintf('MEP structure exported: %s\n', out);
 end
 
+%% === CSV export for statistical analysis: 1 row per MEP; columns = P2P, Latency, AUC ===
+
+% 1) Build the table to export (keep also the MEP label)
+% Convert T.Signal to a string to export it to csv after:
+T.SignalString = cellfun(@(x) sprintf('%g,', x), T.Signal, 'UniformOutput', false);
+T.SignalString = cellfun(@(s) s(1:end-1), T.SignalString, 'UniformOutput', false);
+
+ExportTab = table( ...
+    T.Label, ...
+    T.P2P_uV, ...
+    T.Latency_ms, ...
+    T.AUC_uVms, ...
+    T.SPduration_ms, ...
+    T.SignalString, ...
+    'VariableNames', {'MEP_Label','P2P_uV','Latency_ms','AUC_uVms','SP_ms','Raw_signal'});
+
 % 2) Propose a default file name (same folder as the .mat)
-[~, baseMatName] = fileparts(char(str_file));  % get .mat file name without extension
 defaultCSV = fullfile(char(str_file_dir), sprintf('%s_MEP_metrics.csv', baseMatName));
 
 % 3) Save location

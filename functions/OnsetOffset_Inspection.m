@@ -1,6 +1,9 @@
 function [MEPnew] = OnsetOffset_Inspection(MEP)
 
-nb_mep=sum(startsWith(fieldnames(MEP),'MEP'));
+mepFields = fieldnames(MEP);
+mepNames = mepFields(startsWith(mepFields,'MEP'));
+nb_mep = numel(mepNames);
+
 fig = uifigure('Name','Onset-Offset Inspection','Position',[100 100 900 600]);
 currentIndex = 1;
 
@@ -31,19 +34,20 @@ axesPos = [20 160 680 400];
         modifmax_off = modifmax;
 
         x = MEP.Meta.Time_ms;
-        y = MEP.(['MEP_' num2str(k,'%02d')]).Enveloppe;
+        y = MEP.(mepNames{k}).Enveloppe;
         plotsArray(k) = plot(ax,x,y,'Visible','off','Color','k','LineWidth',1);
         ax.XLim = [min(x) 400];
 
         xlabel(ax,'Time (ms)');
         ylabel(ax,'RMS Enveloppe (V)');
-        title(ax,sprintf('MEP %d',k));
+        title(ax,mepNames{k},'Interpreter','none');
         onset=MEP.Meta.OnOff_ms(k,1);
         offset=MEP.Meta.OnOff_ms(k,2);
-        sp=offset+MEP.(['MEP_' num2str(k,'%02d')]).Silentperiod;
+        sp=offset+MEP.(mepNames{k}).Silentperiod;
         onset(isnan(onset)) = 0;
         offset(isnan(offset)) = 0;
         sp(isnan(sp)) = 0;
+        sp(sp>400) = 400;
 
         if onset == 0
             modifmax_on = 100;
@@ -59,8 +63,8 @@ axesPos = [20 160 680 400];
         xline3(k) = xline(ax, sp, 'Color', '#AA50DE', 'LineWidth', 1.7, 'LineStyle', '--', 'Visible', 'off');
 
         % ylines - onset & offset thresholds
-        yline1(k) = yline(ax, MEP.(['MEP_' num2str(k,'%02d')]).Thresholds.on, 'Color', '#6B43E5', 'LineWidth', .7, 'LineStyle', '--', 'Visible', 'off');
-        yline2(k) = yline(ax, MEP.(['MEP_' num2str(k,'%02d')]).Thresholds.off, 'Color', '#E54379', 'LineWidth', .7, 'LineStyle', '--', 'Visible', 'off');
+        yline1(k) = yline(ax, MEP.(mepNames{k}).Thresholds.on, 'Color', '#6B43E5', 'LineWidth', .7, 'LineStyle', '--', 'Visible', 'off');
+        yline2(k) = yline(ax, MEP.(mepNames{k}).Thresholds.off, 'Color', '#E54379', 'LineWidth', .7, 'LineStyle', '--', 'Visible', 'off');
 
         % Slider 1 (Onset)
         slider1(k) = uislider(fig, ...
@@ -184,9 +188,9 @@ axesPos = [20 160 680 400];
             positions(i,2) = xline2(i).Value;
             positions_idx(i,1) = find(abs(x - xline1(i).Value) == min(abs(x - xline1(i).Value)), 1);
             positions_idx(i,2) = find(abs(x - xline2(i).Value) == min(abs(x - xline2(i).Value)), 1);
-            MEPnew.(['MEP_' num2str(i,'%02d')]).OnOff_ms=positions(i,:);
-            MEPnew.(['MEP_' num2str(i,'%02d')]).OnOff_idx=positions_idx(i,:);
-            MEPnew.(['MEP_' num2str(i,'%02d')]).Silentperiod=xline3(i).Value-xline2(i).Value;
+            MEPnew.(mepNames{i}).OnOff_ms=positions(i,:);
+            MEPnew.(mepNames{i}).OnOff_idx=positions_idx(i,:);
+            MEPnew.(mepNames{i}).Silentperiod=xline3(i).Value-xline2(i).Value;
         end
         MEPnew.Meta.OnOff_ms=positions;
         uiresume(fig);
