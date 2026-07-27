@@ -61,18 +61,29 @@ str_file_path = str_file_dir + str_file;
 tmp = load(str_file_path);
 fprintf('OK — MAT loaded (%s). Fields reindexed.\n', str_file);
 
-%% Selecting the EMG used
+%% Selecting the EMG used and cleaning the field names
 
 fields_tmp = fieldnames(tmp);
 raw_indexed_data = tmp.(fields_tmp{1});
 raw_fields = fieldnames(raw_indexed_data);
-nb_EMGs = sum(startsWith(raw_fields, 'EMG'));
+emg_indices = find(startsWith(raw_fields, 'EMG'));
+nb_EMGs = length(emg_indices);
+available_EMGs = raw_fields(emg_indices);
+emg_numbers = extractAfter(available_EMGs, 'EMG_');
 
-msg = sprintf('Enter the number of the\nEMG that was used:');
-NumEMG = inputdlg(msg, 'Input Required', 1, {'0'});
-EMG_field = "EMG_"+NumEMG{1};
+if nb_EMGs > 1
+    msg = sprintf('%d available EMGs. Enter custom numbers to rename them, or use the sensor numbers (e.g., 2 3 4):', nb_EMGs);
+    answer = inputdlg(msg, 'EMG Renaming', 1, {strjoin(emg_numbers, ' ')});
+    selected_nums = split(strtrim(answer{1}))';
+    selected_EMGs = "EMG_" + selected_nums;
 
-%% Cleaning the field names
+    msg_work = sprintf('Which EMG to you want to analyse (%s)?', strjoin(selected_nums, ', '));
+    num_work_answer = inputdlg(msg_work, 'EMG Choice', 1, selected_nums(1));
+    EMG_field = "EMG_" + strtrim(num_work_answer{1});
+else
+    EMG_field = available_EMGs{1};
+    selected_EMGs = EMG_field;
+end
 
 % Reindexing the structure to use labels easier
 data = struct();
@@ -84,8 +95,12 @@ for i = 4:numel(raw_fields)-nb_EMGs
     newName = oldName(1:end-2);   % removes the last 2 chars ('_X')
     data.(newName) = raw_indexed_data.(oldName);
 end
-for i = numel(raw_fields)-nb_EMGs+1:numel(raw_fields)
-    data.(raw_fields{i}) = raw_indexed_data.(raw_fields{i});
+if nb_EMGs > 1
+    for i = 1:length(selected_EMGs)
+        data.(selected_EMGs{i}) = raw_indexed_data.(available_EMGs{i});
+    end
+elseif nb_EMGs == 1
+    data.(EMG_field) = raw_indexed_data.(EMG_field);
 end
 
 %% Get signals : EMG / Stim
@@ -94,7 +109,7 @@ end
 % TODO: there may be multiple EMG channels
 %       => decide how to select the appropriate channel
 
-if any(strcmp(raw_fields, EMG_field))
+if isfield(data, EMG_field)
     EMG = data.(EMG_field).dat;
     freq_EMG = data.(EMG_field).FreqS;
 end
