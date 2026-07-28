@@ -233,12 +233,13 @@ MEP=OnsetOffset_Inspection(MEP);
 
 for k=1:numel(names)
     
-    on_ms=MEP.(['MEP_' num2str(k,'%02d')]).OnOff_ms(1,1);
-    off_ms=MEP.(['MEP_' num2str(k,'%02d')]).OnOff_ms(1,2);
-    idx_on=MEP.(['MEP_' num2str(k,'%02d')]).OnOff_idx(1,1);
-    idx_off=MEP.(['MEP_' num2str(k,'%02d')]).OnOff_idx(1,2);
-    SPD=MEP.(['MEP_' num2str(k,'%02d')]).Silentperiod;
-    sig=MEP.(['MEP_' num2str(k,'%02d')]).EMG;
+    lab = names{k};
+    on_ms=MEP.(lab).OnOff_ms(1,1);
+    off_ms=MEP.(lab).OnOff_ms(1,2);
+    idx_on=MEP.(lab).OnOff_idx(1,1);
+    idx_off=MEP.(lab).OnOff_idx(1,2);
+    SPD=MEP.(lab).Silentperiod;
+    sig=MEP.(lab).EMG;
 
     if ~isnan(idx_on) && ~isnan(idx_off) && idx_off > idx_on
         seg = sig(idx_on:idx_off);
@@ -255,6 +256,7 @@ for k=1:numel(names)
     MEP.(lab).Duration_ms   = duration_ms;
     MEP.(lab).Peak2Peak_uV  = p2p_uV;
     MEP.(lab).AUC_uVms      = AUC_uVms;
+    MEP.(lab).SPduration_ms = SPD;
 
     Summ(k).On_ms=MEP.Meta.OnOff_ms(k,1);
     Summ(k).Off_ms=MEP.Meta.OnOff_ms(k,2);

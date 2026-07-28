@@ -46,7 +46,7 @@ function [MEP, MEP_SELECTION] = renumberLogMEP(selectedMEPs, selectedIdx, allMEP
     MEP = struct();
     n_keep = size(selectedMEPs, 2);
     for k = 1:n_keep
-        outerField = sprintf('MEP_%02d', k);
+        outerField = sprintf('MEP_%02d', selectedIdx(k));
         innerField = sprintf('EMG');
 
         % Create sub-struct and assign EMG segment + original index
